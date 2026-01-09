@@ -464,7 +464,8 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
  */
 export class RemoteBrowserStorageService extends AbstractStorageService {
 
-	private readonly applicationStorageProfile: IUserDataProfile;
+	// private readonly applicationStorageProfile: IUserDataProfile;
+
 	private readonly applicationStorage: IStorage;
 
 	private profileStorageProfile: IUserDataProfile;
@@ -483,7 +484,7 @@ export class RemoteBrowserStorageService extends AbstractStorageService {
 	) {
 		super();
 
-		this.applicationStorageProfile = this.userDataProfileService.currentProfile;
+
 		this.applicationStorage = this.createApplicationStorage();
 
 		this.profileStorageProfile = this.userDataProfileService.currentProfile;

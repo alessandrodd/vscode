@@ -11,7 +11,7 @@ import { IFileService } from '../../platform/files/common/files.js';
 import { IEnvironmentService } from '../../platform/environment/common/environment.js';
 import { IUserDataProfilesService, IUserDataProfile } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { isProfileUsingDefaultStorage } from '../../platform/storage/common/storage.js';
-import { IStorageMain, IStorageMainOptions, IStorageChangeEvent, ApplicationStorageMain, ProfileStorageMain, WorkspaceStorageMain, InMemoryStorageMain } from '../../platform/storage/node/storageMain.js';
+import { IStorageMain, IStorageMainOptions, IStorageChangeEvent, ApplicationStorageMain, ProfileStorageMain, WorkspaceStorageMain } from '../../platform/storage/node/storageMain.js';
 import { IAnyWorkspaceIdentifier } from '../../platform/workspace/common/workspace.js';
 
 //#region Server Storage Main Service
@@ -89,20 +89,24 @@ export class ServerStorageMainService extends Disposable implements IServerStora
         // Initialize application storage immediately
         this.applicationStorage.init();
 
-        // Prepare storage location as needed
-        this._register(this.userDataProfilesService.onWillCreateProfile(e => {
-            e.join((async () => {
-                if (!(await this.fileService.exists(e.profile.globalStorageHome))) {
-                    await this.fileService.createFolder(e.profile.globalStorageHome);
-                }
-            })());
-        }));
+        // Listen for profile changes
+        this._register(this.userDataProfilesService.onDidChangeProfiles(e => {
+            // Create storage for added profiles
+            for (const profile of e.added) {
+                (async () => {
+                    if (!(await this.fileService.exists(profile.globalStorageHome))) {
+                        await this.fileService.createFolder(profile.globalStorageHome);
+                    }
+                })();
+            }
 
-        // Close the storage of the profile that is being removed
-        this._register(this.userDataProfilesService.onWillRemoveProfile(e => {
-            const storage = this.mapProfileToStorage.get(e.profile.id);
-            if (storage) {
-                e.join(storage.close());
+            // Close storage for removed profiles
+            for (const profile of e.removed) {
+                const storage = this.mapProfileToStorage.get(profile.id);
+                if (storage) {
+                    storage.close();
+                    this.mapProfileToStorage.delete(profile.id);
+                }
             }
         }));
     }
