@@ -1,0 +1,180 @@
+name: Build and Release VS Code Server Web
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for the release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-linux-x64:
+    name: Build Linux x64
+    runs-on: ubuntu-latest
+    env:
+      VSCODE_ARCH: x64
+      NPM_ARCH: x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev \
+            libsecret-1-dev libkrb5-dev python-is-python3 pkg-config rpm fakeroot
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          npm_config_arch: ${{ env.NPM_ARCH }}
+          VSCODE_ARCH: ${{ env.VSCODE_ARCH }}
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download built-in extensions
+        run: node build/lib/builtInExtensions.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build VS Code Server Web (Linux x64)
+        run: |
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js \
+            vscode-reh-web-linux-x64-min
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create archive
+        run: |
+          cd ../
+          tar -czvf vscode-server-web-linux-x64.tar.gz vscode-reh-web-linux-x64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-server-web-linux-x64
+          path: ../vscode-server-web-linux-x64.tar.gz
+
+  build-linux-arm64:
+    name: Build Linux ARM64
+    runs-on: ubuntu-latest
+    env:
+      VSCODE_ARCH: arm64
+      NPM_ARCH: arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev \
+            libsecret-1-dev libkrb5-dev python-is-python3 pkg-config rpm fakeroot \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          npm_config_arch: ${{ env.NPM_ARCH }}
+          VSCODE_ARCH: ${{ env.VSCODE_ARCH }}
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download built-in extensions
+        run: node build/lib/builtInExtensions.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build VS Code Server Web (Linux ARM64)
+        run: |
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js \
+            vscode-reh-web-linux-arm64-min
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create archive
+        run: |
+          cd ../
+          tar -czvf vscode-server-web-linux-arm64.tar.gz vscode-reh-web-linux-arm64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-server-web-linux-arm64
+          path: ../vscode-server-web-linux-arm64.tar.gz
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-linux-x64, build-linux-arm64]
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-server-web-linux-x64
+          path: ./artifacts
+
+      - name: Download Linux ARM64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-server-web-linux-arm64
+          path: ./artifacts
+
+      - name: Get version tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: VS Code Server Web ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## VS Code Server Web Release
+
+            This release includes the VS Code Server Web with remote storage persistence support.
+
+            ### New Feature: Remote Storage Persistence
+            
+            Enable server-side storage with `--enable-remote-storage` to persist settings, 
+            state, and layout on the server instead of browser IndexedDB.
+
+            ### Files
+            - `vscode-server-web-linux-x64.tar.gz` - Linux x64
+            - `vscode-server-web-linux-arm64.tar.gz` - Linux ARM64
+
+            ### Usage
+            ```bash
+            tar -xzf vscode-server-web-linux-x64.tar.gz
+            cd vscode-reh-web-linux-x64
+            ./bin/code-server --enable-remote-storage
+            ```
+          files: |
+            artifacts/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
