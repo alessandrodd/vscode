@@ -9,7 +9,7 @@ import { revive } from '../../base/common/marshalling.js';
 import { IServerChannel } from '../../base/parts/ipc/common/ipc.js';
 import { ILogService } from '../../platform/log/common/log.js';
 import { IBaseSerializableStorageRequest, ISerializableItemsChangeEvent, ISerializableUpdateRequest, Key, Value } from '../../platform/storage/common/storageIpc.js';
-import { IStorageMain, IStorageChangeEvent } from '../../platform/storage/electron-main/storageMain.js';
+import { IStorageMain, IStorageChangeEvent } from '../../platform/storage/node/storageMain.js';
 import { IServerStorageMainService } from './storageMainService.js';
 import { IUserDataProfile } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { reviveIdentifier, IAnyWorkspaceIdentifier } from '../../platform/workspace/common/workspace.js';

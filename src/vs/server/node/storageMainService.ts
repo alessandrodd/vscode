@@ -11,7 +11,7 @@ import { IFileService } from '../../platform/files/common/files.js';
 import { IEnvironmentService } from '../../platform/environment/common/environment.js';
 import { IUserDataProfilesService, IUserDataProfile } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { isProfileUsingDefaultStorage } from '../../platform/storage/common/storage.js';
-import { IStorageMain, IStorageMainOptions, IStorageChangeEvent, ApplicationStorageMain, ProfileStorageMain, WorkspaceStorageMain, InMemoryStorageMain } from '../../platform/storage/electron-main/storageMain.js';
+import { IStorageMain, IStorageMainOptions, IStorageChangeEvent, ApplicationStorageMain, ProfileStorageMain, WorkspaceStorageMain, InMemoryStorageMain } from '../../platform/storage/node/storageMain.js';
 import { IAnyWorkspaceIdentifier } from '../../platform/workspace/common/workspace.js';
 
 //#region Server Storage Main Service

@@ -19,6 +19,21 @@ jobs:
       VSCODE_ARCH: x64
       NPM_ARCH: x64
     steps:
+      - name: Maximize build space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h
+
+      - name: Setup swap space
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -49,15 +64,15 @@ jobs:
 
       - name: Build VS Code Server Web (Linux x64)
         run: |
-          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js \
+          node --max-old-space-size=16384 ./node_modules/gulp/bin/gulp.js \
             vscode-reh-web-linux-x64-min
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create archive
         run: |
-          cd ../
-          tar -czvf vscode-server-web-linux-x64.tar.gz vscode-reh-web-linux-x64
+          cd ../vscode-reh-web-linux-x64
+          tar -czvf ../vscode-server-web-linux-x64.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -72,6 +87,21 @@ jobs:
       VSCODE_ARCH: arm64
       NPM_ARCH: arm64
     steps:
+      - name: Maximize build space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h
+
+      - name: Setup swap space
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -103,15 +133,15 @@ jobs:
 
       - name: Build VS Code Server Web (Linux ARM64)
         run: |
-          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js \
+          node --max-old-space-size=16384 ./node_modules/gulp/bin/gulp.js \
             vscode-reh-web-linux-arm64-min
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create archive
         run: |
-          cd ../
-          tar -czvf vscode-server-web-linux-arm64.tar.gz vscode-reh-web-linux-arm64
+          cd ../vscode-reh-web-linux-arm64
+          tar -czvf ../vscode-server-web-linux-arm64.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -169,7 +199,6 @@ jobs:
             ### Usage
             ```bash
             tar -xzf vscode-server-web-linux-x64.tar.gz
-            cd vscode-reh-web-linux-x64
             ./bin/code-server --enable-remote-storage
             ```
           files: |
@@ -178,3 +207,4 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
