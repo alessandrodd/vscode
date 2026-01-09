@@ -72,8 +72,7 @@ jobs:
       - name: Create archive
         run: |
           cd ../vscode-reh-web-linux-x64
-          tar -czvf vscode-server-web-linux-x64.tar.gz .
-          mv vscode-server-web-linux-x64.tar.gz ${{ github.workspace }}/vscode-server-web-linux-x64.tar.gz
+          tar -czvf ${{ github.workspace }}/vscode-server-web-linux-x64.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -142,8 +141,7 @@ jobs:
       - name: Create archive
         run: |
           cd ../vscode-reh-web-linux-arm64
-          tar -czvf vscode-server-web-linux-arm64.tar.gz .
-          mv vscode-server-web-linux-arm64.tar.gz ${{ github.workspace }}/vscode-server-web-linux-arm64.tar.gz
+          tar -czvf ${{ github.workspace }}/vscode-server-web-linux-arm64.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
